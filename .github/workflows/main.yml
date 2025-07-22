@@ -1,0 +1,44 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v1
+
+      - name: Build Docker image
+        run: docker build -t janani/app .
+
+      - name: Run unit tests
+        run: echo "Running tests..."
+
+      - name: Scan with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: janani/app
+
+      - name: Push to DockerHub
+        run: echo "docker push..."
+
+      - name: Deploy to ECS
+        run: echo "terraform apply..."
+
+      - name: Manual approval for prod
+        if: github.ref == 'refs/heads/main'
+        uses: hmarr/auto-approve-action@v2
+
+      - name: Notify Slack
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
